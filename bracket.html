@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bracket - Tournoi eFootball 2026</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="logo">
+                    <h1>⚽ eFootball 2026</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="index.html">Accueil</a></li>
+                    <li><a href="inscription.html">S'inscrire</a></li>
+                    <li><a href="bracket.html" class="active">Bracket</a></li>
+                    <li><a href="connexion.html">Connexion</a></li>
+                    <li><a href="admin.html">Admin</a></li>
+                    <li id="profilLink" style="display: none;"><a href="profil.html">Mon Profil</a></li>
+                    <li id="logoutLink" style="display: none;"><a href="#" id="logoutBtnNav">Déconnexion</a></li>
+                </ul>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="bracket-section">
+            <div class="container">
+                <h2>Bracket du tournoi</h2>
+                <p class="bracket-subtitle">Suivez la progression des joueurs dans le tournoi</p>
+
+                <div id="bracketContainer" class="bracket-container">
+                    <div class="bracket-empty">
+                        <p>Aucun joueur validé pour le moment.</p>
+                        <p>Les joueurs approuvés par l'admin apparaîtront ici.</p>
+                    </div>
+                </div>
+
+                <div id="bracketContent" style="display: none;">
+                    <div class="bracket-wrapper">
+                        <div id="bracketTree" class="bracket-tree"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Tournoi eFootball. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="bracket.js"></script>
+</body>
+</html>
+

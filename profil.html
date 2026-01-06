@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Profil - Tournoi eFootball 2026</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="logo">
+                    <h1>⚽ eFootball 2026</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="index.html">Accueil</a></li>
+                    <li><a href="inscription.html">S'inscrire</a></li>
+                    <li><a href="bracket.html">Bracket</a></li>
+                    <li><a href="connexion.html">Connexion</a></li>
+                    <li><a href="admin.html">Admin</a></li>
+                    <li id="profilLink" style="display: none;"><a href="profil.html" class="active">Mon Profil</a></li>
+                    <li id="logoutLink" style="display: none;"><a href="#" id="logoutBtnNav">Déconnexion</a></li>
+                </ul>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="form-section">
+            <div class="container">
+                <div class="form-container">
+                    <h2>Mon Profil</h2>
+                    <p class="form-subtitle">Informations de votre compte</p>
+                    
+                    <div id="profilContent">
+                        <div class="profil-loading">
+                            <p>Chargement...</p>
+                        </div>
+                    </div>
+
+                    <div id="notConnected" style="display: none;">
+                        <p style="text-align: center; color: var(--text-light); margin: 2rem 0;">
+                            Vous n'êtes pas connecté.
+                        </p>
+                        <div style="text-align: center;">
+                            <a href="connexion.html" class="btn btn-primary">Se connecter</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Tournoi eFootball. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="profil.js"></script>
+</body>
+</html>
+

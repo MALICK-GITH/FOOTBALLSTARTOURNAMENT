@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - Tournoi eFootball 2026</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="logo">
+                    <h1>⚽ eFootball 2026</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="index.html">Accueil</a></li>
+                    <li><a href="inscription.html" class="active">S'inscrire</a></li>
+                    <li><a href="bracket.html">Bracket</a></li>
+                    <li><a href="connexion.html">Connexion</a></li>
+                    <li><a href="admin.html">Admin</a></li>
+                    <li id="profilLink" style="display: none;"><a href="profil.html">Mon Profil</a></li>
+                    <li id="logoutLink" style="display: none;"><a href="#" id="logoutBtnNav">Déconnexion</a></li>
+                </ul>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="form-section">
+            <div class="container">
+                <div class="form-container">
+                    <h2>Inscription au tournoi</h2>
+                    <p class="form-subtitle">Remplissez le formulaire ci-dessous pour participer au tournoi</p>
+                    
+                    <form id="inscriptionForm" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="pseudo">Pseudo <span class="required">*</span></label>
+                            <input type="text" id="pseudo" name="pseudo" required>
+                            <span class="error-message" id="pseudoError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nomComplet">Nom complet (optionnel)</label>
+                            <input type="text" id="nomComplet" name="nomComplet">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contact">Contact (optionnel)</label>
+                            <input type="text" id="contact" name="contact" placeholder="Email ou téléphone">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Mot de passe <span class="required">*</span></label>
+                            <input type="password" id="password" name="password" required>
+                            <span class="error-message" id="passwordError"></span>
+                            <small>Minimum 6 caractères</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="photoProfil">Photo de profil (optionnel)</label>
+                            <input type="file" id="photoProfil" name="photoProfil" accept="image/png,image/jpg,image/jpeg,image/gif,image/webp">
+                            <small>Formats acceptés : PNG, JPG, JPEG, GIF, WEBP (max 5MB)</small>
+                            <div class="image-preview" id="photoProfilPreview"></div>
+                            <span class="error-message" id="photoProfilError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="screenshotPaiement">Screenshot paiement Mobile Money (optionnel)</label>
+                            <input type="file" id="screenshotPaiement" name="screenshotPaiement" accept="image/png,image/jpg,image/jpeg,image/gif,image/webp">
+                            <small>Formats acceptés : PNG, JPG, JPEG, GIF, WEBP (max 5MB)</small>
+                            <div class="image-preview" id="screenshotPaiementPreview"></div>
+                            <span class="error-message" id="screenshotPaiementError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="numeroPaiement">Numéro de paiement <span class="required">*</span></label>
+                            <input type="text" id="numeroPaiement" name="numeroPaiement" required placeholder="Numéro de transaction Mobile Money">
+                            <span class="error-message" id="numeroPaiementError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="message">Message (optionnel)</label>
+                            <textarea id="message" name="message" rows="4" placeholder="Laissez un message pour les organisateurs..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-large">S'inscrire</button>
+                    </form>
+
+                    <div id="messageContainer" class="message-container"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Tournoi eFootball. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="inscription.js"></script>
+</body>
+</html>
+

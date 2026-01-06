@@ -1,212 +1,106 @@
-# eFootKings 2026 🇨🇮 - ORACXPRED
+# Tournoi eFootball 2026 - Site Web
 
-Plateforme web complète et professionnelle pour le tournoi eFootball Mobile 2026.
+Site web complet pour la gestion d'un tournoi eFootball, développé en HTML/CSS/JavaScript pur (frontend uniquement).
 
-## 🎮 Fonctionnalités principales
+## Fonctionnalités
 
-### 👥 Comptes utilisateurs
-- ✅ Création de compte avec pseudo eFootball unique
-- ✅ Nom complet / contact (optionnel)
-- ✅ Photo de profil (PNG, JPG, JPEG, GIF, WEBP, max 5MB)
-- ✅ Screenshot du paiement Mobile Money obligatoire
-- ✅ **Connexion persistante** : les utilisateurs restent connectés même après fermeture du navigateur
-- ✅ Déconnexion possible, reconnexion automatique
-- ✅ Historique complet de toutes les actions
+### Pages disponibles
 
-### 💰 Gestion des inscriptions et paiements
-- ✅ Limite à **8 joueurs maximum**
-- ✅ Paiement Mobile Money obligatoire via Wave, MTN Money, Moov Money
-- ✅ Numéro : **+225 0500 44 82 08**
-- ✅ Screenshot du paiement requis pour validation
-- ✅ L'administrateur peut valider ou rejeter l'inscription
-- ✅ Sauvegarde immédiate dans la base de données
-- ✅ L'administrateur peut supprimer les inscriptions si nécessaire
+1. **Accueil (index.html)**
+   - Présentation du tournoi
+   - Navigation vers toutes les sections
 
-### 🏆 Bracket dynamique
-- ✅ Élimination directe : quart → demi → finale
-- ✅ L'administrateur peut modifier scores, matchs et bracket à tout moment
-- ✅ **Mise à jour automatique et instantanée** pour tous les utilisateurs
-- ✅ Gestion automatique des badges et trophées :
-  - 🥇 Champion
-  - 🥈 Finaliste
-  - 🥉 Demi-finaliste
+2. **Inscription (inscription.html)**
+   - Formulaire d'inscription avec validation côté client
+   - Upload de photo de profil (optionnel)
+   - Upload de screenshot de paiement Mobile Money (optionnel)
+   - Validation des formats d'images (PNG, JPG, JPEG, GIF, WEBP, max 5MB)
+   - Prévisualisation des images avant soumission
 
-### 💬 Messagerie admin
-- ✅ L'administrateur peut envoyer des messages **globaux** ou **ciblés**
-- ✅ Les utilisateurs ne peuvent pas répondre
-- ✅ Messages en temps réel, style WhatsApp/Facebook
-- ✅ Notifications visibles pour nouveaux messages
-- ✅ Utilisation : annonces, résultats, nouvelles fonctionnalités, rappels
+3. **Connexion (connexion.html)**
+   - Authentification des joueurs
+   - Redirection vers le bracket après connexion
 
-### 💾 Sauvegarde et persistance totale
-- ✅ Base de données robuste : **SQLAlchemy** (SQLite/PostgreSQL/MySQL)
-- ✅ Toutes les actions et fichiers sont sauvegardés instantanément
-- ✅ Chaque modification (scores, bracket, badges, messages) est stockée
-- ✅ Historique horodaté complet pour restaurer n'importe quel état antérieur
+4. **Admin (admin.html)**
+   - Connexion sécurisée (pseudo: `admin`, mot de passe: `admin123`)
+   - Gestion des inscriptions (approuver, refuser, supprimer)
+   - Visualisation des messages des joueurs
+   - Affichage des photos de profil et screenshots
+   - Filtrage par statut (En attente, Approuvés, Refusés)
 
-### 👨‍💼 Supervision administrateur
-- ✅ L'administrateur voit tous les utilisateurs en temps réel :
-  - Pseudo, nom complet, photo, statut en ligne/hors ligne
-  - Historique des matchs et positions dans le bracket
-  - Validation des paiements et inscriptions
-- ✅ Contrôle total : suppression, modification, messages
+5. **Bracket (bracket.html)**
+   - Affichage du tournoi avec les joueurs approuvés
+   - Génération automatique du bracket
+   - Mise à jour dynamique
 
-### 🎨 Interface et UX
-- ✅ Interface moderne, attractive, responsive (mobile et desktop)
-- ✅ Bracket visuel et interactif, avec scores et badges
-- ✅ Notifications visibles pour messages et changements de bracket
-- ✅ Historique complet pour chaque utilisateur : matchs joués, scores et positions
+## Utilisation
 
-### ⚙️ Automatisation complète
-- ✅ Calcul automatique du classement et des prochains matchs
-- ✅ Gestion automatique des badges et trophées
-- ✅ Synchronisation instantanée pour tous les utilisateurs après toute modification
+### Pour les joueurs
 
-### 🔒 Sécurité et fiabilité
-- ✅ Mots de passe hashés (bcrypt)
-- ✅ Uploads sécurisés avec contrôle de type et taille
-- ✅ Protection contre suppression accidentelle ou crash du serveur
-- ✅ Connexion persistante et fiable, aucune donnée ne peut être perdue
+1. Accédez à la page **Inscription**
+2. Remplissez le formulaire (pseudo et mot de passe obligatoires)
+3. Optionnellement, uploadez votre photo de profil et le screenshot de paiement
+4. Entrez votre numéro de paiement Mobile Money
+5. Soumettez le formulaire
+6. Attendez la validation par l'administrateur
 
-## 🚀 Installation
+### Pour l'administrateur
 
-### 1. Prérequis
-- Python 3.8+
-- pip
+1. Accédez à la page **Admin**
+2. Connectez-vous avec :
+   - Pseudo: `admin`
+   - Mot de passe: `admin123`
+3. Gérez les inscriptions :
+   - Approuvez les joueurs validés
+   - Refusez les inscriptions non conformes
+   - Supprimez les inscriptions si nécessaire
+4. Consultez les messages des joueurs dans l'onglet "Messages"
 
-### 2. Installation des dépendances
+## Stockage des données
 
-```bash
-pip install -r requirements.txt
-```
+Les données sont stockées localement dans le navigateur via `localStorage`. Cela signifie que :
+- Les données sont conservées entre les sessions
+- Chaque navigateur a ses propres données
+- Pour un déploiement réel, il faudrait un backend avec une vraie base de données
 
-### 3. Configuration (optionnel)
-
-Créez un fichier `.env` :
-
-```env
-SECRET_KEY=votre-cle-secrete-tres-longue-et-aleatoire
-DATABASE_URL=sqlite:///efootkings.db
-VERCEL=0
-```
-
-Pour PostgreSQL (production) :
-```env
-DATABASE_URL=postgresql://user:password@localhost/efootkings
-```
-
-### 4. Lancer l'application
-
-```bash
-python app.py
-```
-
-L'application sera accessible sur `http://localhost:5000`
-
-## 🔐 Compte administrateur par défaut
-
-- **Username:** `admin`
-- **Password:** `admin123`
-
-⚠️ **IMPORTANT:** Changez le mot de passe admin en production !
-
-## 📦 Technologies utilisées
-
-### Backend
-- **Flask 3.0** : Framework web Python
-- **Flask-Login** : Gestion des sessions utilisateurs
-- **Flask-SQLAlchemy** : ORM pour la base de données
-- **bcrypt** : Hashage sécurisé des mots de passe
-- **SQLite/PostgreSQL/MySQL** : Base de données
-
-### Frontend
-- **Bootstrap 5** : Framework CSS responsive
-- **Font Awesome** : Icônes
-- **Google Fonts (Poppins)** : Police de caractères
-- **Animate.css** : Animations
-- **JavaScript** : Mises à jour en temps réel (AJAX)
-
-## 📁 Structure du projet
+## Structure des fichiers
 
 ```
-kingsefootball2026/
-├── app.py                      # Application Flask principale
-├── requirements.txt            # Dépendances Python
-├── vercel.json                 # Configuration Vercel
-├── SETUP.md                    # Guide d'installation détaillé
-├── templates/                  # Templates HTML
-│   ├── base.html
-│   ├── index.html
-│   ├── register.html
-│   ├── user_login.html
-│   ├── user_dashboard.html
-│   ├── bracket.html
-│   ├── admin_login.html
-│   ├── admin_dashboard.html
-│   └── admin_messages.html
-├── static/                     # Fichiers statiques
-│   ├── css/
-│   │   └── style.css
-│   └── js/
-│       └── main.js
-├── uploads/                    # Fichiers uploadés (créé automatiquement)
-│   ├── profiles/               # Photos de profil
-│   └── payments/               # Screenshots de paiement
-└── efootkings.db              # Base de données SQLite (créé automatiquement)
+.
+├── index.html          # Page d'accueil
+├── inscription.html    # Page d'inscription
+├── connexion.html      # Page de connexion
+├── admin.html          # Page d'administration
+├── bracket.html        # Page du bracket
+├── styles.css          # Styles CSS communs
+├── script.js           # Scripts communs
+├── inscription.js      # Logique d'inscription
+├── connexion.js        # Logique de connexion
+├── admin.js            # Logique d'administration
+└── bracket.js          # Logique du bracket
 ```
 
-## 🗄️ Structure de la base de données
+## Caractéristiques techniques
 
-- **User** : Comptes utilisateurs avec connexion persistante
-- **Badge** : Badges et trophées (champion, finaliste, demi-finaliste)
-- **Message** : Messages de l'admin (globaux ou ciblés)
-- **MatchHistory** : Historique des matchs pour chaque utilisateur
-- **Bracket** : État actuel du bracket (JSON dans la base)
-- **AdminUser** : Compte administrateur
+- **100% Frontend** : Aucun backend requis
+- **Responsive** : Compatible mobile, tablette et desktop
+- **Validation côté client** : Vérification des formats et tailles de fichiers
+- **Prévisualisation d'images** : Affichage des images avant soumission
+- **Messages de feedback** : Messages de succès et d'erreur clairs
+- **Design moderne** : Interface utilisateur soignée et intuitive
 
-## 💳 Paiement Mobile Money
+## Notes de sécurité
 
-- **Numéro:** +225 0500 44 82 08
-- **Plateformes supportées:** Wave, MTN Money, Moov Money
-- **Screenshot obligatoire** pour validation de l'inscription
+⚠️ **Important** : Ce site utilise `localStorage` pour le stockage des données. En production, il est fortement recommandé de :
+- Utiliser un backend sécurisé
+- Hasher les mots de passe (actuellement stockés en clair)
+- Implémenter une authentification sécurisée
+- Valider les données côté serveur
+- Protéger contre les attaques XSS et CSRF
 
-## 🔄 Mises à jour en temps réel
+## Compatibilité
 
-- Le bracket se met à jour automatiquement toutes les 5 secondes
-- Les messages non lus sont vérifiés toutes les 30 secondes
-- Les utilisateurs voient les changements instantanément
+- Navigateurs modernes (Chrome, Firefox, Safari, Edge)
+- Support des fonctionnalités ES6+
+- Responsive design pour tous les écrans
 
-## 📝 Notes importantes
-
-- Les données sont stockées dans une base de données SQLAlchemy (persistance totale)
-- Les fichiers uploadés sont sauvegardés dans `uploads/`
-- Le tournoi est limité à **8 joueurs maximum**
-- Le bracket est généré automatiquement quand 8 joueurs sont validés
-- Les badges sont attribués automatiquement selon les résultats
-
-## 🚀 Déploiement
-
-### Vercel
-
-L'application est compatible Vercel. Les fichiers sont stockés dans `/tmp` sur Vercel.
-
-```bash
-vercel
-```
-
-### Autres plateformes
-
-L'application peut être déployée sur n'importe quelle plateforme supportant Flask :
-- Heroku
-- Railway
-- DigitalOcean
-- AWS
-- etc.
-
-## 📞 Support
-
-Pour toute question ou problème, contactez l'administrateur.
-
----
-
-Développé avec ❤️ pour la communauté eFootball Mobile - ORACXPRED / eFootKings 2026
