@@ -816,4 +816,12 @@ with app.app_context():
         print("Admin créé: username='admin', password='admin123'")
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Configuration pour production (Render.com, Heroku, etc.)
+    port = int(os.environ.get('PORT', 5000))
+    # Désactiver debug en production sauf si explicitement activé
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() in ('true', '1', 'yes')
+    
+    # En production, écouter sur 0.0.0.0 pour accepter les connexions externes
+    # Important: Render.com nécessite 0.0.0.0 et le port de la variable d'environnement PORT
+    print(f"Starting Flask app on 0.0.0.0:{port} (debug={debug})")
+    app.run(host='0.0.0.0', port=port, debug=debug)
