@@ -8,6 +8,7 @@ import os
 import uuid
 import json
 from functools import wraps
+from contextlib import contextmanager
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production-2026')
@@ -208,38 +209,79 @@ class AdminUser(db.Model):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
+@contextmanager
+def db_transaction():
+    """Context manager pour gérer les transactions avec rollback automatique en cas d'erreur"""
+    try:
+        yield db.session
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database transaction error: {e}")
+        raise
+
+def safe_db_commit():
+    """Fonction helper pour commit sécurisé avec rollback automatique"""
+    try:
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database commit error: {e}")
+        return False
+
 def save_uploaded_file(file, folder=''):
-    """Sauvegarde un fichier uploadé"""
-    if file and file.filename and allowed_file(file.filename):
-        try:
-            ensure_dirs()
-            filename = secure_filename(file.filename)
-            unique_filename = f"{uuid.uuid4()}_{filename}"
-            if folder:
-                folder_path = os.path.join(app.config['UPLOAD_FOLDER'], folder)
-                os.makedirs(folder_path, exist_ok=True)
-                filepath = os.path.join(folder_path, unique_filename)
-            else:
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            
-            file.save(filepath)
-            # Retourner le chemin relatif avec le dossier si nécessaire
-            if folder:
-                return f"{folder}/{unique_filename}"
-            return unique_filename
-        except Exception as e:
-            print(f"Error saving file: {e}")
+    """Sauvegarde un fichier uploadé de manière optimisée"""
+    if not file or not file.filename:
+        return None
+    
+    if not allowed_file(file.filename):
+        return None
+    
+    try:
+        ensure_dirs()
+        filename = secure_filename(file.filename)
+        if not filename:
             return None
-    return None
+        
+        unique_filename = f"{uuid.uuid4()}_{filename}"
+        if folder:
+            folder_path = os.path.join(app.config['UPLOAD_FOLDER'], folder)
+            os.makedirs(folder_path, exist_ok=True)
+            filepath = os.path.join(folder_path, unique_filename)
+        else:
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        
+        # Sauvegarder le fichier de manière optimisée
+        file.save(filepath)
+        
+        # Retourner le chemin relatif avec le dossier si nécessaire
+        if folder:
+            return f"{folder}/{unique_filename}"
+        return unique_filename
+    except Exception as e:
+        print(f"Error saving file: {e}")
+        # Nettoyer le fichier partiel si nécessaire
+        try:
+            if 'filepath' in locals() and os.path.exists(filepath):
+                os.remove(filepath)
+        except:
+            pass
+        return None
 
 def get_bracket_data():
     """Récupère ou crée le bracket"""
-    bracket = Bracket.query.first()
-    if not bracket:
-        bracket = Bracket()
-        db.session.add(bracket)
-        db.session.commit()
-    return bracket
+    try:
+        bracket = Bracket.query.first()
+        if not bracket:
+            bracket = Bracket()
+            db.session.add(bracket)
+            safe_db_commit()
+        return bracket
+    except Exception as e:
+        print(f"Error in get_bracket_data: {e}")
+        # Retourner un bracket vide en cas d'erreur
+        return Bracket()
 
 def admin_required(f):
     """Décorateur pour les routes admin"""
@@ -264,76 +306,131 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
-    validated_count = User.query.filter_by(status='validated').count()
-    max_players = get_max_players()
-    is_full = validated_count >= max_players
-    
-    # Mettre à jour le statut en ligne des utilisateurs connectés
-    if current_user.is_authenticated:
-        current_user.is_online = True
-        current_user.last_seen = datetime.utcnow()
-        db.session.commit()
-    
-    return render_template('index.html', 
-                         registered_count=validated_count, 
-                         max_players=max_players,
-                         is_full=is_full)
+    try:
+        validated_count = User.query.filter_by(status='validated').count()
+        max_players = get_max_players()
+        is_full = validated_count >= max_players
+        
+        # Mettre à jour le statut en ligne des utilisateurs connectés
+        if current_user.is_authenticated:
+            try:
+                current_user.is_online = True
+                current_user.last_seen = datetime.utcnow()
+                safe_db_commit()
+            except Exception as e:
+                print(f"Error updating user status: {e}")
+        
+        return render_template('index.html', 
+                             registered_count=validated_count, 
+                             max_players=max_players,
+                             is_full=is_full)
+    except Exception as e:
+        print(f"Error in index route: {e}")
+        flash('Une erreur est survenue. Veuillez réessayer.', 'error')
+        return render_template('index.html', 
+                             registered_count=0, 
+                             max_players=get_max_players(),
+                             is_full=False)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    validated_count = User.query.filter_by(status='validated').count()
-    max_players = get_max_players()
-    
-    if validated_count >= max_players:
-        flash('Le tournoi est complet ! Les inscriptions sont fermées.', 'warning')
-        return redirect(url_for('index'))
-    
-    if request.method == 'POST':
-        pseudo = request.form.get('pseudo', '').strip()
-        full_name = request.form.get('full_name', '').strip()
-        contact = request.form.get('contact', '').strip()
-        password = request.form.get('password', '').strip()
+    try:
+        validated_count = User.query.filter_by(status='validated').count()
+        max_players = get_max_players()
         
-        if not pseudo:
-            flash('Le pseudo eFootball est obligatoire !', 'error')
-            return render_template('register.html')
+        if validated_count >= max_players:
+            flash('Le tournoi est complet ! Les inscriptions sont fermées.', 'warning')
+            return redirect(url_for('index'))
         
-        if not password:
-            flash('Un mot de passe est obligatoire !', 'error')
-            return render_template('register.html')
+        if request.method == 'POST':
+            pseudo = request.form.get('pseudo', '').strip()
+            full_name = request.form.get('full_name', '').strip()
+            contact = request.form.get('contact', '').strip()
+            password = request.form.get('password', '').strip()
+            
+            if not pseudo:
+                flash('Le pseudo eFootball est obligatoire !', 'error')
+                return render_template('register.html')
+            
+            if not password:
+                flash('Un mot de passe est obligatoire !', 'error')
+                return render_template('register.html')
+            
+            # Vérifier si le pseudo existe déjà
+            existing_user = User.query.filter_by(pseudo=pseudo).first()
+            if existing_user:
+                flash('Ce pseudo est déjà inscrit !', 'error')
+                return render_template('register.html')
+            
+            # Gérer les uploads AVANT la création de l'utilisateur
+            # Si les uploads échouent, on ne crée pas l'utilisateur
+            profile_picture = save_uploaded_file(request.files.get('profile_picture'), 'profiles')
+            payment_screenshot = save_uploaded_file(request.files.get('screenshot'), 'payments')
+            
+            if not payment_screenshot:
+                flash('Le screenshot du paiement est obligatoire !', 'error')
+                return render_template('register.html')
+            
+            # Créer l'utilisateur avec gestion d'erreur
+            try:
+                new_user = User(
+                    pseudo=pseudo,
+                    full_name=full_name or None,
+                    contact=contact or None,
+                    profile_picture=profile_picture,
+                    payment_screenshot=payment_screenshot,
+                    status='pending'
+                )
+                new_user.set_password(password)
+                
+                db.session.add(new_user)
+                
+                if not safe_db_commit():
+                    # Nettoyer les fichiers uploadés si la transaction échoue
+                    if profile_picture:
+                        try:
+                            filepath = os.path.join(app.config['UPLOAD_FOLDER'], profile_picture)
+                            if os.path.exists(filepath):
+                                os.remove(filepath)
+                        except:
+                            pass
+                    if payment_screenshot:
+                        try:
+                            filepath = os.path.join(app.config['UPLOAD_FOLDER'], payment_screenshot)
+                            if os.path.exists(filepath):
+                                os.remove(filepath)
+                        except:
+                            pass
+                    flash('Erreur lors de l\'inscription. Veuillez réessayer.', 'error')
+                    return render_template('register.html')
+                
+                flash('Inscription enregistrée ! Votre paiement sera validé par l\'administrateur.', 'success')
+                return redirect(url_for('index'))
+            except Exception as e:
+                print(f"Error creating user: {e}")
+                # Nettoyer les fichiers uploadés en cas d'erreur
+                if profile_picture:
+                    try:
+                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], profile_picture)
+                        if os.path.exists(filepath):
+                            os.remove(filepath)
+                    except:
+                        pass
+                if payment_screenshot:
+                    try:
+                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], payment_screenshot)
+                        if os.path.exists(filepath):
+                            os.remove(filepath)
+                    except:
+                        pass
+                flash('Erreur lors de l\'inscription. Veuillez réessayer.', 'error')
+                return render_template('register.html')
         
-        # Vérifier si le pseudo existe déjà
-        existing_user = User.query.filter_by(pseudo=pseudo).first()
-        if existing_user:
-            flash('Ce pseudo est déjà inscrit !', 'error')
-            return render_template('register.html')
-        
-        # Gérer les uploads
-        profile_picture = save_uploaded_file(request.files.get('profile_picture'), 'profiles')
-        payment_screenshot = save_uploaded_file(request.files.get('screenshot'), 'payments')
-        
-        if not payment_screenshot:
-            flash('Le screenshot du paiement est obligatoire !', 'error')
-            return render_template('register.html')
-        
-        # Créer l'utilisateur
-        new_user = User(
-            pseudo=pseudo,
-            full_name=full_name or None,
-            contact=contact or None,
-            profile_picture=profile_picture,
-            payment_screenshot=payment_screenshot,
-            status='pending'
-        )
-        new_user.set_password(password)
-        
-        db.session.add(new_user)
-        db.session.commit()
-        
-        flash('Inscription enregistrée ! Votre paiement sera validé par l\'administrateur.', 'success')
-        return redirect(url_for('index'))
-    
-    return render_template('register.html')
+        return render_template('register.html')
+    except Exception as e:
+        print(f"Error in register route: {e}")
+        flash('Une erreur est survenue. Veuillez réessayer.', 'error')
+        return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def user_login():
@@ -341,95 +438,131 @@ def user_login():
         return redirect(url_for('user_dashboard'))
     
     if request.method == 'POST':
-        pseudo = request.form.get('pseudo', '').strip()
-        password = request.form.get('password', '')
-        
-        user = User.query.filter_by(pseudo=pseudo).first()
-        
-        if user and user.check_password(password):
-            login_user(user, remember=True)  # Connexion persistante
-            session.permanent = True
-            user.is_online = True
-            user.last_seen = datetime.utcnow()
-            db.session.commit()
-            flash('Connexion réussie !', 'success')
-            next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('user_dashboard'))
-        else:
-            flash('Pseudo ou mot de passe incorrect !', 'error')
+        try:
+            pseudo = request.form.get('pseudo', '').strip()
+            password = request.form.get('password', '')
+            
+            user = User.query.filter_by(pseudo=pseudo).first()
+            
+            if user and user.check_password(password):
+                login_user(user, remember=True)  # Connexion persistante
+                session.permanent = True
+                try:
+                    user.is_online = True
+                    user.last_seen = datetime.utcnow()
+                    safe_db_commit()
+                except Exception as e:
+                    print(f"Error updating user login status: {e}")
+                    # Continuer même si la mise à jour échoue
+                
+                flash('Connexion réussie !', 'success')
+                next_page = request.args.get('next')
+                return redirect(next_page) if next_page else redirect(url_for('user_dashboard'))
+            else:
+                flash('Pseudo ou mot de passe incorrect !', 'error')
+        except Exception as e:
+            print(f"Error in user_login route: {e}")
+            flash('Une erreur est survenue lors de la connexion. Veuillez réessayer.', 'error')
     
     return render_template('user_login.html')
 
 @app.route('/logout')
 @login_required
 def user_logout():
-    if current_user.is_authenticated:
-        current_user.is_online = False
-        db.session.commit()
+    try:
+        if current_user.is_authenticated:
+            current_user.is_online = False
+            safe_db_commit()
+    except Exception as e:
+        print(f"Error updating user logout status: {e}")
+    
     logout_user()
     flash('Déconnexion réussie !', 'success')
     return redirect(url_for('index'))
 
 @app.route('/bracket')
 def bracket():
-    bracket_data = get_bracket_data()
-    validated_players = User.query.filter_by(status='validated').all()
-    
-    # Si on a 8 joueurs validés, générer le bracket automatiquement
-    if len(validated_players) == 8 and not bracket_data.get_quarterfinals():
-        quarterfinals = []
-        for i in range(0, 8, 2):
-            quarterfinals.append({
-                'player1': validated_players[i].pseudo,
-                'player2': validated_players[i+1].pseudo,
-                'score1': 0,
-                'score2': 0,
-                'winner': None
-            })
-        bracket_data.set_quarterfinals(quarterfinals)
-        db.session.commit()
-    
-    return render_template('bracket.html', 
-                         bracket=bracket_data.to_dict(), 
-                         players=[p.pseudo for p in validated_players])
+    try:
+        bracket_data = get_bracket_data()
+        validated_players = User.query.filter_by(status='validated').all()
+        
+        # Si on a 8 joueurs validés, générer le bracket automatiquement
+        if len(validated_players) == 8 and not bracket_data.get_quarterfinals():
+            try:
+                quarterfinals = []
+                for i in range(0, 8, 2):
+                    quarterfinals.append({
+                        'player1': validated_players[i].pseudo,
+                        'player2': validated_players[i+1].pseudo,
+                        'score1': 0,
+                        'score2': 0,
+                        'winner': None
+                    })
+                bracket_data.set_quarterfinals(quarterfinals)
+                safe_db_commit()
+            except Exception as e:
+                print(f"Error generating bracket: {e}")
+        
+        return render_template('bracket.html', 
+                             bracket=bracket_data.to_dict(), 
+                             players=[p.pseudo for p in validated_players])
+    except Exception as e:
+        print(f"Error in bracket route: {e}")
+        return render_template('bracket.html', 
+                             bracket={'quarterfinals': [], 'semifinals': [], 'final': None, 'winner': None}, 
+                             players=[])
 
 # ==================== ROUTES UTILISATEUR ====================
 
 @app.route('/dashboard')
 @login_required
 def user_dashboard():
-    user = current_user
-    user.is_online = True
-    user.last_seen = datetime.utcnow()
-    db.session.commit()
-    
-    # Récupérer les messages non lus
-    unread_messages = Message.query.filter(
-        ((Message.user_id == user.id) | (Message.user_id.is_(None))) & 
-        (Message.is_read == False)
-    ).order_by(Message.created_at.desc()).all()
-    
-    # Récupérer l'historique des matchs
-    match_history = MatchHistory.query.filter_by(user_id=user.id).order_by(MatchHistory.match_date.desc()).all()
-    
-    # Récupérer le bracket pour voir la position
-    bracket_data = get_bracket_data().to_dict()
-    
-    return render_template('user_dashboard.html',
-                         user=user,
-                         unread_messages=unread_messages,
-                         match_history=match_history,
-                         bracket=bracket_data)
+    try:
+        user = current_user
+        try:
+            user.is_online = True
+            user.last_seen = datetime.utcnow()
+            safe_db_commit()
+        except Exception as e:
+            print(f"Error updating user status: {e}")
+        
+        # Récupérer les messages non lus
+        unread_messages = Message.query.filter(
+            ((Message.user_id == user.id) | (Message.user_id.is_(None))) & 
+            (Message.is_read == False)
+        ).order_by(Message.created_at.desc()).all()
+        
+        # Récupérer l'historique des matchs
+        match_history = MatchHistory.query.filter_by(user_id=user.id).order_by(MatchHistory.match_date.desc()).all()
+        
+        # Récupérer le bracket pour voir la position
+        bracket_data = get_bracket_data().to_dict()
+        
+        return render_template('user_dashboard.html',
+                             user=user,
+                             unread_messages=unread_messages,
+                             match_history=match_history,
+                             bracket=bracket_data)
+    except Exception as e:
+        print(f"Error in user_dashboard route: {e}")
+        flash('Une erreur est survenue. Veuillez réessayer.', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/api/messages/read/<int:message_id>', methods=['POST'])
 @login_required
 def mark_message_read(message_id):
-    message = Message.query.get_or_404(message_id)
-    if message.user_id == current_user.id or message.user_id is None:
-        message.is_read = True
-        db.session.commit()
-        return jsonify({'success': True})
-    return jsonify({'error': 'Unauthorized'}), 403
+    try:
+        message = Message.query.get_or_404(message_id)
+        if message.user_id == current_user.id or message.user_id is None:
+            message.is_read = True
+            if safe_db_commit():
+                return jsonify({'success': True})
+            else:
+                return jsonify({'error': 'Database error'}), 500
+        return jsonify({'error': 'Unauthorized'}), 403
+    except Exception as e:
+        print(f"Error in mark_message_read route: {e}")
+        return jsonify({'error': 'Server error'}), 500
 
 @app.route('/api/messages/unread-count')
 @login_required
@@ -448,25 +581,29 @@ def admin_login():
         return redirect(url_for('admin_dashboard'))
     
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
-        
-        admin = AdminUser.query.filter_by(username=username).first()
-        
-        if not admin:
-            # Créer l'admin par défaut si aucun n'existe
-            admin = AdminUser(username='admin')
-            admin.set_password('admin123')
-            db.session.add(admin)
-            db.session.commit()
-        
-        if admin.check_password(password):
-            session['admin_logged_in'] = True
-            session.permanent = True
-            flash('Connexion réussie !', 'success')
-            return redirect(url_for('admin_dashboard'))
-        else:
-            flash('Identifiants incorrects !', 'error')
+        try:
+            username = request.form.get('username', '').strip()
+            password = request.form.get('password', '')
+            
+            if not username or not password:
+                flash('Veuillez remplir tous les champs !', 'error')
+                return render_template('admin_login.html')
+            
+            admin = AdminUser.query.filter_by(username=username).first()
+            
+            # Vérifier d'abord si l'admin existe et si le mot de passe est correct
+            if admin and admin.check_password(password):
+                session['admin_logged_in'] = True
+                session.permanent = True
+                flash('Connexion réussie !', 'success')
+                return redirect(url_for('admin_dashboard'))
+            else:
+                # Ne pas créer d'admin automatiquement lors d'une tentative de connexion
+                # L'admin doit être créé lors de l'initialisation de l'app
+                flash('Identifiants incorrects !', 'error')
+        except Exception as e:
+            print(f"Error in admin_login route: {e}")
+            flash('Une erreur est survenue lors de la connexion. Veuillez réessayer.', 'error')
     
     return render_template('admin_login.html')
 
@@ -479,16 +616,25 @@ def admin_logout():
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
-    users = User.query.order_by(User.created_at.desc()).all()
-    validated_players = User.query.filter_by(status='validated').all()
-    pending_count = User.query.filter_by(status='pending').count()
-    bracket_data = get_bracket_data()
-    
-    return render_template('admin_dashboard.html', 
-                         users=users, 
-                         bracket=bracket_data.to_dict(),
-                         validated_players=validated_players,
-                         pending_count=pending_count)
+    try:
+        users = User.query.order_by(User.created_at.desc()).all()
+        validated_players = User.query.filter_by(status='validated').all()
+        pending_count = User.query.filter_by(status='pending').count()
+        bracket_data = get_bracket_data()
+        
+        return render_template('admin_dashboard.html', 
+                             users=users, 
+                             bracket=bracket_data.to_dict(),
+                             validated_players=validated_players,
+                             pending_count=pending_count)
+    except Exception as e:
+        print(f"Error in admin_dashboard route: {e}")
+        flash('Une erreur est survenue.', 'error')
+        return render_template('admin_dashboard.html', 
+                             users=[], 
+                             bracket={'quarterfinals': [], 'semifinals': [], 'final': None, 'winner': None},
+                             validated_players=[],
+                             pending_count=0)
 
 @app.route('/admin/users')
 @admin_required
@@ -499,287 +645,319 @@ def admin_users():
 @app.route('/admin/validate/<user_id>', methods=['POST'])
 @admin_required
 def validate_user(user_id):
-    user = User.query.get_or_404(user_id)
-    action = request.json.get('action')  # 'validate' or 'reject'
-    
-    if action == 'validate':
-        validated_count = User.query.filter_by(status='validated').count()
-        if validated_count >= get_max_players():
-            return jsonify({'error': 'Le tournoi est complet (8 joueurs)'}), 400
+    try:
+        user = User.query.get_or_404(user_id)
+        action = request.json.get('action')  # 'validate' or 'reject'
         
-        user.status = 'validated'
-        flash(f'Joueur {user.pseudo} validé !', 'success')
+        if action == 'validate':
+            validated_count = User.query.filter_by(status='validated').count()
+            if validated_count >= get_max_players():
+                return jsonify({'error': 'Le tournoi est complet (8 joueurs)'}), 400
+            
+            user.status = 'validated'
+            flash(f'Joueur {user.pseudo} validé !', 'success')
+            
+            # Si on atteint 8 joueurs validés, générer le bracket
+            validated_players = User.query.filter_by(status='validated').all()
+            if len(validated_players) == 8:
+                bracket_data = get_bracket_data()
+                if not bracket_data.get_quarterfinals():
+                    quarterfinals = []
+                    for i in range(0, 8, 2):
+                        quarterfinals.append({
+                            'player1': validated_players[i].pseudo,
+                            'player2': validated_players[i+1].pseudo,
+                            'score1': 0,
+                            'score2': 0,
+                            'winner': None
+                        })
+                    bracket_data.set_quarterfinals(quarterfinals)
+        elif action == 'reject':
+            user.status = 'rejected'
+            flash(f'Joueur {user.pseudo} refusé.', 'info')
+        else:
+            return jsonify({'error': 'Invalid action'}), 400
         
-        # Si on atteint 8 joueurs validés, générer le bracket
-        validated_players = User.query.filter_by(status='validated').all()
-        if len(validated_players) == 8:
-            bracket_data = get_bracket_data()
-            if not bracket_data.get_quarterfinals():
-                quarterfinals = []
-                for i in range(0, 8, 2):
-                    quarterfinals.append({
-                        'player1': validated_players[i].pseudo,
-                        'player2': validated_players[i+1].pseudo,
-                        'score1': 0,
-                        'score2': 0,
-                        'winner': None
-                    })
-                bracket_data.set_quarterfinals(quarterfinals)
-    elif action == 'reject':
-        user.status = 'rejected'
-        flash(f'Joueur {user.pseudo} refusé.', 'info')
-    
-    db.session.commit()
-    return jsonify({'success': True, 'status': user.status})
+        if safe_db_commit():
+            return jsonify({'success': True, 'status': user.status})
+        else:
+            return jsonify({'error': 'Database error'}), 500
+    except Exception as e:
+        print(f"Error in validate_user route: {e}")
+        return jsonify({'error': 'Server error'}), 500
 
 @app.route('/admin/delete-user/<user_id>', methods=['POST'])
 @admin_required
 def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
-    db.session.delete(user)
-    db.session.commit()
-    flash(f'Utilisateur {user.pseudo} supprimé.', 'info')
-    return jsonify({'success': True})
+    try:
+        user = User.query.get_or_404(user_id)
+        pseudo = user.pseudo
+        db.session.delete(user)
+        if safe_db_commit():
+            flash(f'Utilisateur {pseudo} supprimé.', 'info')
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Database error'}), 500
+    except Exception as e:
+        print(f"Error in delete_user route: {e}")
+        return jsonify({'error': 'Server error'}), 500
 
 @app.route('/admin/update-bracket', methods=['POST'])
 @admin_required
 def update_bracket():
-    bracket_data = get_bracket_data()
-    data = request.json
-    
-    # Mettre à jour les quarts de finale
-    if 'quarterfinals' in data:
-        quarterfinals = data['quarterfinals']
-        for i, match_data in enumerate(quarterfinals):
-            if i < len(bracket_data.get_quarterfinals()):
-                existing = bracket_data.get_quarterfinals()[i]
-                existing['score1'] = match_data.get('score1', 0)
-                existing['score2'] = match_data.get('score2', 0)
+    try:
+        bracket_data = get_bracket_data()
+        data = request.json
+        
+        # Mettre à jour les quarts de finale
+        if 'quarterfinals' in data:
+            quarterfinals = data['quarterfinals']
+            for i, match_data in enumerate(quarterfinals):
+                if i < len(bracket_data.get_quarterfinals()):
+                    existing = bracket_data.get_quarterfinals()[i]
+                    existing['score1'] = match_data.get('score1', 0)
+                    existing['score2'] = match_data.get('score2', 0)
+                    
+                    # Déterminer le gagnant
+                    if existing['score1'] > existing['score2']:
+                        existing['winner'] = existing['player1']
+                    elif existing['score2'] > existing['score1']:
+                        existing['winner'] = existing['player2']
+                    else:
+                        existing['winner'] = None
+            
+            bracket_data.set_quarterfinals(quarterfinals)
+            
+            # Générer les demi-finales si tous les quarts sont terminés
+            winners = [m['winner'] for m in quarterfinals if m.get('winner')]
+            if len(winners) == 4 and not bracket_data.get_semifinals():
+                semifinals = [
+                    {'player1': winners[0], 'player2': winners[1], 'score1': 0, 'score2': 0, 'winner': None},
+                    {'player1': winners[2], 'player2': winners[3], 'score1': 0, 'score2': 0, 'winner': None}
+                ]
+                bracket_data.set_semifinals(semifinals)
                 
-                # Déterminer le gagnant
-                if existing['score1'] > existing['score2']:
-                    existing['winner'] = existing['player1']
-                elif existing['score2'] > existing['score1']:
-                    existing['winner'] = existing['player2']
-                else:
-                    existing['winner'] = None
+                # Créer l'historique des matchs pour les quarts de finale
+                for match in quarterfinals:
+                    if match.get('winner'):
+                        # Trouver les utilisateurs
+                        user1 = User.query.filter_by(pseudo=match['player1']).first()
+                        user2 = User.query.filter_by(pseudo=match['player2']).first()
+                        
+                        if user1:
+                            history1 = MatchHistory(
+                                user_id=user1.id,
+                                round_type='quarterfinal',
+                                opponent=match['player2'],
+                                user_score=match['score1'],
+                                opponent_score=match['score2'],
+                                result='win' if match['winner'] == match['player1'] else 'loss'
+                            )
+                            db.session.add(history1)
+                        
+                        if user2:
+                            history2 = MatchHistory(
+                                user_id=user2.id,
+                                round_type='quarterfinal',
+                                opponent=match['player1'],
+                                user_score=match['score2'],
+                                opponent_score=match['score1'],
+                                result='win' if match['winner'] == match['player2'] else 'loss'
+                            )
+                            db.session.add(history2)
         
-        bracket_data.set_quarterfinals(quarterfinals)
-        
-        # Générer les demi-finales si tous les quarts sont terminés
-        winners = [m['winner'] for m in quarterfinals if m.get('winner')]
-        if len(winners) == 4 and not bracket_data.get_semifinals():
-            semifinals = [
-                {'player1': winners[0], 'player2': winners[1], 'score1': 0, 'score2': 0, 'winner': None},
-                {'player1': winners[2], 'player2': winners[3], 'score1': 0, 'score2': 0, 'winner': None}
-            ]
+        # Mettre à jour les demi-finales
+        if 'semifinals' in data:
+            semifinals = data['semifinals']
+            for i, match_data in enumerate(semifinals):
+                if i < len(bracket_data.get_semifinals()):
+                    existing = bracket_data.get_semifinals()[i]
+                    existing['score1'] = match_data.get('score1', 0)
+                    existing['score2'] = match_data.get('score2', 0)
+                    
+                    if existing['score1'] > existing['score2']:
+                        existing['winner'] = existing['player1']
+                    elif existing['score2'] > existing['score1']:
+                        existing['winner'] = existing['player2']
+                    else:
+                        existing['winner'] = None
+            
             bracket_data.set_semifinals(semifinals)
             
-            # Créer l'historique des matchs pour les quarts de finale
-            for match in quarterfinals:
-                if match.get('winner'):
-                    # Trouver les utilisateurs
-                    user1 = User.query.filter_by(pseudo=match['player1']).first()
-                    user2 = User.query.filter_by(pseudo=match['player2']).first()
-                    
-                    if user1:
-                        history1 = MatchHistory(
-                            user_id=user1.id,
-                            round_type='quarterfinal',
-                            opponent=match['player2'],
-                            user_score=match['score1'],
-                            opponent_score=match['score2'],
-                            result='win' if match['winner'] == match['player1'] else 'loss'
-                        )
-                        db.session.add(history1)
-                    
-                    if user2:
-                        history2 = MatchHistory(
-                            user_id=user2.id,
-                            round_type='quarterfinal',
-                            opponent=match['player1'],
-                            user_score=match['score2'],
-                            opponent_score=match['score1'],
-                            result='win' if match['winner'] == match['player2'] else 'loss'
-                        )
-                        db.session.add(history2)
-    
-    # Mettre à jour les demi-finales
-    if 'semifinals' in data:
-        semifinals = data['semifinals']
-        for i, match_data in enumerate(semifinals):
-            if i < len(bracket_data.get_semifinals()):
-                existing = bracket_data.get_semifinals()[i]
-                existing['score1'] = match_data.get('score1', 0)
-                existing['score2'] = match_data.get('score2', 0)
+            # Générer la finale si les deux demi-finales sont terminées
+            winners = [m['winner'] for m in semifinals if m.get('winner')]
+            if len(winners) == 2 and not bracket_data.get_final():
+                final = {
+                    'player1': winners[0],
+                    'player2': winners[1],
+                    'score1': 0,
+                    'score2': 0,
+                    'winner': None
+                }
+                bracket_data.set_final(final)
                 
-                if existing['score1'] > existing['score2']:
-                    existing['winner'] = existing['player1']
-                elif existing['score2'] > existing['score1']:
-                    existing['winner'] = existing['player2']
+                # Attribuer badge demi-finaliste aux perdants
+                for match in semifinals:
+                    if match.get('winner'):
+                        loser = match['player1'] if match['winner'] == match['player2'] else match['player2']
+                        user = User.query.filter_by(pseudo=loser).first()
+                        if user:
+                            # Vérifier si le badge n'existe pas déjà
+                            existing_badge = Badge.query.filter_by(
+                                user_id=user.id,
+                                badge_type='semifinalist'
+                            ).first()
+                            if not existing_badge:
+                                badge = Badge(user_id=user.id, badge_type='semifinalist')
+                                db.session.add(badge)
+                
+                # Créer l'historique des matchs pour les demi-finales
+                for match in semifinals:
+                    if match.get('winner'):
+                        user1 = User.query.filter_by(pseudo=match['player1']).first()
+                        user2 = User.query.filter_by(pseudo=match['player2']).first()
+                        
+                        if user1:
+                            history1 = MatchHistory(
+                                user_id=user1.id,
+                                round_type='semifinal',
+                                opponent=match['player2'],
+                                user_score=match['score1'],
+                                opponent_score=match['score2'],
+                                result='win' if match['winner'] == match['player1'] else 'loss'
+                            )
+                            db.session.add(history1)
+                        
+                        if user2:
+                            history2 = MatchHistory(
+                                user_id=user2.id,
+                                round_type='semifinal',
+                                opponent=match['player1'],
+                                user_score=match['score2'],
+                                opponent_score=match['score1'],
+                                result='win' if match['winner'] == match['player2'] else 'loss'
+                            )
+                            db.session.add(history2)
+        
+        # Mettre à jour la finale
+        if 'final' in data:
+            final = data['final']
+            existing_final = bracket_data.get_final()
+            if existing_final:
+                existing_final['score1'] = final.get('score1', 0)
+                existing_final['score2'] = final.get('score2', 0)
+                
+                if existing_final['score1'] > existing_final['score2']:
+                    existing_final['winner'] = existing_final['player1']
+                    bracket_data.winner = existing_final['player1']
+                elif existing_final['score2'] > existing_final['score1']:
+                    existing_final['winner'] = existing_final['player2']
+                    bracket_data.winner = existing_final['player2']
                 else:
-                    existing['winner'] = None
-        
-        bracket_data.set_semifinals(semifinals)
-        
-        # Générer la finale si les deux demi-finales sont terminées
-        winners = [m['winner'] for m in semifinals if m.get('winner')]
-        if len(winners) == 2 and not bracket_data.get_final():
-            final = {
-                'player1': winners[0],
-                'player2': winners[1],
-                'score1': 0,
-                'score2': 0,
-                'winner': None
-            }
-            bracket_data.set_final(final)
-            
-            # Attribuer badge demi-finaliste aux perdants
-            for match in semifinals:
-                if match.get('winner'):
-                    loser = match['player1'] if match['winner'] == match['player2'] else match['player2']
-                    user = User.query.filter_by(pseudo=loser).first()
-                    if user:
-                        # Vérifier si le badge n'existe pas déjà
+                    existing_final['winner'] = None
+                    bracket_data.winner = None
+                
+                bracket_data.set_final(existing_final)
+                
+                # Attribuer badges
+                if existing_final.get('winner'):
+                    winner_user = User.query.filter_by(pseudo=existing_final['winner']).first()
+                    loser_user = User.query.filter_by(
+                        pseudo=existing_final['player1'] if existing_final['winner'] == existing_final['player2'] 
+                        else existing_final['player2']
+                    ).first()
+                    
+                    # Badge champion pour le vainqueur
+                    if winner_user:
                         existing_badge = Badge.query.filter_by(
-                            user_id=user.id,
-                            badge_type='semifinalist'
+                            user_id=winner_user.id,
+                            badge_type='champion'
                         ).first()
                         if not existing_badge:
-                            badge = Badge(user_id=user.id, badge_type='semifinalist')
+                            badge = Badge(user_id=winner_user.id, badge_type='champion')
                             db.session.add(badge)
-            
-            # Créer l'historique des matchs pour les demi-finales
-            for match in semifinals:
-                if match.get('winner'):
-                    user1 = User.query.filter_by(pseudo=match['player1']).first()
-                    user2 = User.query.filter_by(pseudo=match['player2']).first()
                     
-                    if user1:
+                    # Badge finaliste pour le perdant
+                    if loser_user:
+                        existing_badge = Badge.query.filter_by(
+                            user_id=loser_user.id,
+                            badge_type='finalist'
+                        ).first()
+                        if not existing_badge:
+                            badge = Badge(user_id=loser_user.id, badge_type='finalist')
+                            db.session.add(badge)
+                    
+                    # Créer l'historique de la finale
+                    if winner_user:
                         history1 = MatchHistory(
-                            user_id=user1.id,
-                            round_type='semifinal',
-                            opponent=match['player2'],
-                            user_score=match['score1'],
-                            opponent_score=match['score2'],
-                            result='win' if match['winner'] == match['player1'] else 'loss'
+                            user_id=winner_user.id,
+                            round_type='final',
+                            opponent=existing_final['player1'] if existing_final['winner'] == existing_final['player2'] else existing_final['player2'],
+                            user_score=existing_final['score1'] if existing_final['winner'] == existing_final['player1'] else existing_final['score2'],
+                            opponent_score=existing_final['score2'] if existing_final['winner'] == existing_final['player1'] else existing_final['score1'],
+                            result='win'
                         )
                         db.session.add(history1)
                     
-                    if user2:
+                    if loser_user:
                         history2 = MatchHistory(
-                            user_id=user2.id,
-                            round_type='semifinal',
-                            opponent=match['player1'],
-                            user_score=match['score2'],
-                            opponent_score=match['score1'],
-                            result='win' if match['winner'] == match['player2'] else 'loss'
+                            user_id=loser_user.id,
+                            round_type='final',
+                            opponent=existing_final['winner'],
+                            user_score=existing_final['score2'] if existing_final['winner'] == existing_final['player1'] else existing_final['score1'],
+                            opponent_score=existing_final['score1'] if existing_final['winner'] == existing_final['player1'] else existing_final['score2'],
+                            result='loss'
                         )
                         db.session.add(history2)
-    
-    # Mettre à jour la finale
-    if 'final' in data:
-        final = data['final']
-        existing_final = bracket_data.get_final()
-        if existing_final:
-            existing_final['score1'] = final.get('score1', 0)
-            existing_final['score2'] = final.get('score2', 0)
-            
-            if existing_final['score1'] > existing_final['score2']:
-                existing_final['winner'] = existing_final['player1']
-                bracket_data.winner = existing_final['player1']
-            elif existing_final['score2'] > existing_final['score1']:
-                existing_final['winner'] = existing_final['player2']
-                bracket_data.winner = existing_final['player2']
-            else:
-                existing_final['winner'] = None
-                bracket_data.winner = None
-            
-            bracket_data.set_final(existing_final)
-            
-            # Attribuer badges
-            if existing_final.get('winner'):
-                winner_user = User.query.filter_by(pseudo=existing_final['winner']).first()
-                loser_user = User.query.filter_by(
-                    pseudo=existing_final['player1'] if existing_final['winner'] == existing_final['player2'] 
-                    else existing_final['player2']
-                ).first()
-                
-                # Badge champion pour le vainqueur
-                if winner_user:
-                    existing_badge = Badge.query.filter_by(
-                        user_id=winner_user.id,
-                        badge_type='champion'
-                    ).first()
-                    if not existing_badge:
-                        badge = Badge(user_id=winner_user.id, badge_type='champion')
-                        db.session.add(badge)
-                
-                # Badge finaliste pour le perdant
-                if loser_user:
-                    existing_badge = Badge.query.filter_by(
-                        user_id=loser_user.id,
-                        badge_type='finalist'
-                    ).first()
-                    if not existing_badge:
-                        badge = Badge(user_id=loser_user.id, badge_type='finalist')
-                        db.session.add(badge)
-                
-                # Créer l'historique de la finale
-                if winner_user:
-                    history1 = MatchHistory(
-                        user_id=winner_user.id,
-                        round_type='final',
-                        opponent=existing_final['player1'] if existing_final['winner'] == existing_final['player2'] else existing_final['player2'],
-                        user_score=existing_final['score1'] if existing_final['winner'] == existing_final['player1'] else existing_final['score2'],
-                        opponent_score=existing_final['score2'] if existing_final['winner'] == existing_final['player1'] else existing_final['score1'],
-                        result='win'
-                    )
-                    db.session.add(history1)
-                
-                if loser_user:
-                    history2 = MatchHistory(
-                        user_id=loser_user.id,
-                        round_type='final',
-                        opponent=existing_final['winner'],
-                        user_score=existing_final['score2'] if existing_final['winner'] == existing_final['player1'] else existing_final['score1'],
-                        opponent_score=existing_final['score1'] if existing_final['winner'] == existing_final['player1'] else existing_final['score2'],
-                        result='loss'
-                    )
-                    db.session.add(history2)
-    
-    db.session.commit()
-    return jsonify({'success': True, 'bracket': bracket_data.to_dict()})
+        
+        if safe_db_commit():
+            return jsonify({'success': True, 'bracket': bracket_data.to_dict()})
+        else:
+            return jsonify({'error': 'Database error'}), 500
+    except Exception as e:
+        print(f"Error in update_bracket route: {e}")
+        return jsonify({'error': 'Server error'}), 500
 
 @app.route('/admin/messages', methods=['GET', 'POST'])
 @admin_required
 def admin_messages():
     if request.method == 'POST':
-        title = request.form.get('title', '').strip()
-        content = request.form.get('content', '').strip()
-        target = request.form.get('target', 'all')  # 'all' or user_id
-        
-        if not title or not content:
-            flash('Le titre et le contenu sont obligatoires !', 'error')
+        try:
+            title = request.form.get('title', '').strip()
+            content = request.form.get('content', '').strip()
+            target = request.form.get('target', 'all')  # 'all' or user_id
+            
+            if not title or not content:
+                flash('Le titre et le contenu sont obligatoires !', 'error')
+                return redirect(url_for('admin_messages'))
+            
+            if target == 'all':
+                # Message global
+                message = Message(user_id=None, title=title, content=content)
+            else:
+                # Message ciblé
+                message = Message(user_id=target, title=title, content=content)
+            
+            db.session.add(message)
+            if safe_db_commit():
+                flash('Message envoyé avec succès !', 'success')
+            else:
+                flash('Erreur lors de l\'envoi du message. Veuillez réessayer.', 'error')
             return redirect(url_for('admin_messages'))
-        
-        if target == 'all':
-            # Message global
-            message = Message(user_id=None, title=title, content=content)
-            db.session.add(message)
-        else:
-            # Message ciblé
-            message = Message(user_id=target, title=title, content=content)
-            db.session.add(message)
-        
-        db.session.commit()
-        flash('Message envoyé avec succès !', 'success')
-        return redirect(url_for('admin_messages'))
+        except Exception as e:
+            print(f"Error in admin_messages POST route: {e}")
+            flash('Une erreur est survenue. Veuillez réessayer.', 'error')
+            return redirect(url_for('admin_messages'))
     
     # GET: Afficher le formulaire et l'historique
-    users = User.query.all()
-    messages = Message.query.order_by(Message.created_at.desc()).limit(50).all()
-    return render_template('admin_messages.html', users=users, messages=messages)
+    try:
+        users = User.query.all()
+        messages = Message.query.order_by(Message.created_at.desc()).limit(50).all()
+        return render_template('admin_messages.html', users=users, messages=messages)
+    except Exception as e:
+        print(f"Error in admin_messages GET route: {e}")
+        flash('Une erreur est survenue.', 'error')
+        return render_template('admin_messages.html', users=[], messages=[])
 
 @app.route('/api/bracket/updates')
 def bracket_updates():
