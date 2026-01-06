@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Messages Admin - eFootKings 2026 🇨🇮{% endblock %}
+
+{% block content %}
+<section class="admin-messages py-5 mt-5">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="text-white fw-bold mb-3">
+                    <i class="fas fa-envelope me-2 text-warning"></i>Messagerie Admin
+                </h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card-custom p-4 mb-4">
+                    <h3 class="text-warning mb-4">
+                        <i class="fas fa-paper-plane me-2"></i>Envoyer un message
+                    </h3>
+                    
+                    <form method="POST" id="messageForm">
+                        <div class="mb-3">
+                            <label for="target" class="form-label text-white">
+                                <i class="fas fa-users me-2 text-warning"></i>Destinataire
+                            </label>
+                            <select class="form-select form-select-lg" id="target" name="target" required>
+                                <option value="all">Tous les utilisateurs (Message global)</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.pseudo }}{% if user.full_name %} ({{ user.full_name }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label text-white">
+                                <i class="fas fa-heading me-2 text-warning"></i>Titre <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="title" 
+                                   name="title" 
+                                   required 
+                                   placeholder="Titre du message"
+                                   maxlength="200">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label text-white">
+                                <i class="fas fa-comment me-2 text-warning"></i>Message <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control form-control-lg" 
+                                      id="content" 
+                                      name="content" 
+                                      rows="5" 
+                                      required 
+                                      placeholder="Contenu du message"></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note :</strong> Les utilisateurs ne peuvent pas répondre aux messages. 
+                            Utilisez cette fonctionnalité pour les annonces, résultats, nouvelles fonctionnalités, etc.
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-warning btn-lg px-5">
+                                <i class="fas fa-paper-plane me-2"></i>Envoyer le message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card-custom p-4">
+                    <h3 class="text-warning mb-4">
+                        <i class="fas fa-history me-2"></i>Historique récent
+                    </h3>
+                    
+                    {% if messages %}
+                    <div class="messages-history">
+                        {% for message in messages[:10] %}
+                        <div class="message-history-item mb-3 p-3 bg-dark rounded">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="text-white mb-0">{{ message.title }}</h6>
+                                {% if message.user_id is none %}
+                                <span class="badge bg-info">Global</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Ciblé</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-white-50 small mb-2">{{ message.content[:100] }}{% if message.content|length > 100 %}...{% endif %}</p>
+                            <small class="text-white-50">
+                                <i class="fas fa-clock me-1"></i>
+                                {{ message.created_at.strftime('%d/%m/%Y %H:%M') if message.created_at else '' }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-white-50 text-center">Aucun message envoyé.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

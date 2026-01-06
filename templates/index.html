@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - eFootKings 2026 🇨🇮{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-center py-5 mt-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-12">
+                <h1 class="display-3 fw-bold text-white mb-4 animate__animated animate__fadeInDown">
+                    <i class="fas fa-trophy text-warning me-3"></i>
+                    eFootKings 2026 🇨🇮
+                </h1>
+                <p class="lead text-white-50 mb-4 animate__animated animate__fadeInUp">
+                    Le tournoi eFootball Mobile de l'année 2026
+                </p>
+                <div class="mb-5 animate__animated animate__fadeInUp animate__delay-1s">
+                    {% if is_full %}
+                    <div class="alert alert-warning d-inline-block">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Tournoi complet !</strong> Les inscriptions sont fermées.
+                    </div>
+                    {% else %}
+                    <div class="badge bg-warning text-dark fs-5 px-4 py-2 mb-3">
+                        <i class="fas fa-users me-2"></i>
+                        {{ registered_count }} / {{ max_players }} joueurs inscrits
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Images du Tournoi -->
+<section class="tournament-images py-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="image-card animate__animated animate__fadeInLeft">
+                    <img src="https://i.ibb.co/ynZhHY2w/image-search-1767534681910.jpg" 
+                         alt="Tournoi eFootball" 
+                         class="img-fluid rounded shadow-lg">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="image-card animate__animated animate__fadeInUp">
+                    <img src="https://i.ibb.co/qLzF595b/1767533414518.png" 
+                         alt="Tournoi eFootball" 
+                         class="img-fluid rounded shadow-lg">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="image-card animate__animated animate__fadeInRight">
+                    <img src="https://i.ibb.co/nv1mjjT/1767533254762.png" 
+                         alt="Tournoi eFootball" 
+                         class="img-fluid rounded shadow-lg">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Description et Règles -->
+<section class="rules-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card-custom p-4 mb-4 animate__animated animate__fadeInUp">
+                    <h2 class="text-warning mb-4">
+                        <i class="fas fa-info-circle me-2"></i>À propos du tournoi
+                    </h2>
+                    <p class="text-white-50 mb-4">
+                        Bienvenue dans le tournoi <strong class="text-warning">eFootKings 2026 🇨🇮</strong>, 
+                        l'événement eFootball Mobile le plus attendu de l'année ! 
+                        Rejoignez 8 joueurs d'élite pour une compétition intense et déterminer qui sera 
+                        le champion ultime.
+                    </p>
+                    <p class="text-white-50">
+                        Le tournoi se déroule en format élimination directe : quarts de finale, 
+                        demi-finales et finale. Chaque match est crucial pour avancer vers la victoire !
+                    </p>
+                </div>
+
+                <div class="card-custom p-4 mb-4 animate__animated animate__fadeInUp animate__delay-1s">
+                    <h2 class="text-warning mb-4">
+                        <i class="fas fa-gavel me-2"></i>Règles du tournoi
+                    </h2>
+                    <ul class="rules-list text-white-50">
+                        <li><i class="fas fa-check-circle text-warning me-2"></i>Format : Élimination directe (8 joueurs)</li>
+                        <li><i class="fas fa-check-circle text-warning me-2"></i>Plateforme : eFootball Mobile</li>
+                        <li><i class="fas fa-check-circle text-warning me-2"></i>Inscription : Paiement Mobile Money obligatoire (+225 0500 44 82 08)</li>
+                        <li><i class="fas fa-check-circle text-warning me-2"></i>Validation : Screenshot du paiement requis</li>
+                        <li><i class="fas fa-check-circle text-warning me-2"></i>Limite : 8 joueurs maximum (premiers inscrits validés)</li>
+                        <li><i class="fas fa-check-circle text-warning me-2"></i>Matchs : Scores enregistrés par l'administrateur</li>
+                        <li><i class="fas fa-check-circle text-warning me-2"></i>Prix : Trophée et reconnaissance pour le champion</li>
+                    </ul>
+                </div>
+
+                <div class="card-custom p-4 mb-4 animate__animated animate__fadeInUp animate__delay-2s">
+                    <h2 class="text-warning mb-4">
+                        <i class="fas fa-money-bill-wave me-2"></i>Paiement
+                    </h2>
+                    <p class="text-white-50 mb-3">
+                        Pour participer, effectuez votre paiement via Mobile Money :
+                    </p>
+                    <div class="payment-info bg-dark p-3 rounded text-center">
+                        <p class="mb-0 text-warning fs-4 fw-bold">
+                            <i class="fas fa-phone me-2"></i>+225 0500 44 82 08
+                        </p>
+                        <p class="text-white-50 small mt-2 mb-0">
+                            Envoyez le screenshot du paiement lors de l'inscription
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action -->
+<section class="cta-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <div class="cta-buttons animate__animated animate__fadeInUp animate__delay-3s">
+                    {% if not is_full %}
+                    <a href="{{ url_for('register') }}" class="btn btn-warning btn-lg me-3 mb-3">
+                        <i class="fas fa-user-plus me-2"></i>S'inscrire maintenant
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('bracket') }}" class="btn btn-outline-warning btn-lg mb-3">
+                        <i class="fas fa-sitemap me-2"></i>Voir le bracket
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

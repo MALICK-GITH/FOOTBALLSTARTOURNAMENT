@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Bracket - eFootKings 2026 🇨🇮{% endblock %}
+
+{% block content %}
+<section class="bracket-section py-5 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h1 class="display-4 text-white fw-bold animate__animated animate__fadeInDown">
+                    <i class="fas fa-sitemap me-3 text-warning"></i>Bracket du tournoi
+                </h1>
+                <p class="text-white-50 animate__animated animate__fadeInUp">
+                    Suivez l'évolution des matchs en temps réel
+                </p>
+            </div>
+        </div>
+
+        <!-- Images du tournoi -->
+        <div class="row mb-5">
+            <div class="col-md-4 mb-3">
+                <img src="https://i.ibb.co/ynZhHY2w/image-search-1767534681910.jpg" 
+                     alt="Tournoi" 
+                     class="img-fluid rounded shadow-lg">
+            </div>
+            <div class="col-md-4 mb-3">
+                <img src="https://i.ibb.co/qLzF595b/1767533414518.png" 
+                     alt="Tournoi" 
+                     class="img-fluid rounded shadow-lg">
+            </div>
+            <div class="col-md-4 mb-3">
+                <img src="https://i.ibb.co/nv1mjjT/1767533254762.png" 
+                     alt="Tournoi" 
+                     class="img-fluid rounded shadow-lg">
+            </div>
+        </div>
+
+        <!-- Bracket -->
+        <div class="bracket-container">
+            {% if bracket.quarterfinals %}
+            <!-- Quarts de finale -->
+            <div class="bracket-round mb-5">
+                <h3 class="text-warning text-center mb-4">
+                    <i class="fas fa-trophy me-2"></i>Quarts de finale
+                </h3>
+                <div class="row g-4">
+                    {% for match in bracket.quarterfinals %}
+                    <div class="col-md-6">
+                        <div class="match-card card-custom p-4">
+                            <div class="match-header text-center mb-3">
+                                <span class="badge bg-warning text-dark">Match {{ loop.index }}</span>
+                            </div>
+                            <div class="player-row mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-white fw-bold">{{ match.player1 }}</span>
+                                    <span class="score-badge {% if match.winner == match.player1 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ match.score1 }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="vs-divider text-center text-white-50 mb-3">VS</div>
+                            <div class="player-row">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-white fw-bold">{{ match.player2 }}</span>
+                                    <span class="score-badge {% if match.winner == match.player2 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ match.score2 }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% if match.winner %}
+                            <div class="winner-badge text-center mt-3">
+                                <span class="badge bg-success">
+                                    <i class="fas fa-crown me-1"></i>Gagnant : {{ match.winner }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Demi-finales -->
+            {% if bracket.semifinals %}
+            <div class="bracket-round mb-5">
+                <h3 class="text-warning text-center mb-4">
+                    <i class="fas fa-trophy me-2"></i>Demi-finales
+                </h3>
+                <div class="row g-4">
+                    {% for match in bracket.semifinals %}
+                    <div class="col-md-6">
+                        <div class="match-card card-custom p-4">
+                            <div class="match-header text-center mb-3">
+                                <span class="badge bg-warning text-dark">Demi-finale {{ loop.index }}</span>
+                            </div>
+                            <div class="player-row mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-white fw-bold">{{ match.player1 }}</span>
+                                    <span class="score-badge {% if match.winner == match.player1 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ match.score1 }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="vs-divider text-center text-white-50 mb-3">VS</div>
+                            <div class="player-row">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-white fw-bold">{{ match.player2 }}</span>
+                                    <span class="score-badge {% if match.winner == match.player2 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ match.score2 }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% if match.winner %}
+                            <div class="winner-badge text-center mt-3">
+                                <span class="badge bg-success">
+                                    <i class="fas fa-crown me-1"></i>Gagnant : {{ match.winner }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Finale -->
+            {% if bracket.final %}
+            <div class="bracket-round mb-5">
+                <h3 class="text-warning text-center mb-4">
+                    <i class="fas fa-trophy me-2"></i>Finale
+                </h3>
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="match-card card-custom p-5 final-match">
+                            <div class="match-header text-center mb-4">
+                                <span class="badge bg-warning text-dark fs-5 px-4 py-2">GRANDE FINALE</span>
+                            </div>
+                            <div class="player-row mb-4">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-white fw-bold fs-4">{{ bracket.final.player1 }}</span>
+                                    <span class="score-badge fs-4 {% if bracket.final.winner == bracket.final.player1 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ bracket.final.score1 }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="vs-divider text-center text-white-50 mb-4 fs-3">VS</div>
+                            <div class="player-row mb-4">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-white fw-bold fs-4">{{ bracket.final.player2 }}</span>
+                                    <span class="score-badge fs-4 {% if bracket.final.winner == bracket.final.player2 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ bracket.final.score2 }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% if bracket.winner %}
+                            <div class="winner-badge text-center mt-4">
+                                <div class="champion-badge bg-warning text-dark p-4 rounded">
+                                    <i class="fas fa-crown fa-2x mb-2"></i>
+                                    <h3 class="mb-0">CHAMPION : {{ bracket.winner }}</h3>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <!-- Pas encore de bracket -->
+            <div class="text-center">
+                <div class="card-custom p-5">
+                    <i class="fas fa-hourglass-half fa-3x text-warning mb-4"></i>
+                    <h3 class="text-white mb-3">Bracket en attente</h3>
+                    <p class="text-white-50">
+                        Le bracket sera généré automatiquement une fois que 8 joueurs auront été validés.
+                    </p>
+                    <p class="text-white-50 mb-0">
+                        Joueurs validés actuellement : <strong class="text-warning">{{ players|length }}</strong> / 8
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Mise à jour automatique du bracket toutes les 5 secondes
+    function updateBracket() {
+        fetch('/api/bracket/updates')
+            .then(response => response.json())
+            .then(data => {
+                // Si le bracket a changé, recharger la page
+                const currentBracket = {{ bracket|tojson }};
+                if (JSON.stringify(currentBracket) !== JSON.stringify(data)) {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error updating bracket:', error);
+            });
+    }
+    
+    // Mettre à jour toutes les 5 secondes
+    setInterval(updateBracket, 5000);
+</script>
+{% endblock %}
+

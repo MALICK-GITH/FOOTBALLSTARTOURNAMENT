@@ -1,0 +1,19 @@
+{
+  "name": "efootkings-2026",
+  "version": "1.0.0",
+  "description": "Site web pour le tournoi eFootball Mobile 2026 - eFootKings 2026",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel",
+    "deploy:prod": "vercel --prod"
+  },
+  "keywords": [
+    "flask",
+    "efootball",
+    "tournament",
+    "vercel"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+

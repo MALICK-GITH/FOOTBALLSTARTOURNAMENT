@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login - eFootKings 2026 🇨🇮{% endblock %}
+
+{% block content %}
+<section class="admin-login-section py-5 mt-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5">
+                <div class="card-custom p-5 animate__animated animate__fadeInUp">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-shield-alt fa-3x text-warning mb-3"></i>
+                        <h2 class="text-white">Connexion Admin</h2>
+                        <p class="text-white-50">Accès réservé aux administrateurs</p>
+                    </div>
+                    
+                    <form method="POST">
+                        <div class="mb-4">
+                            <label for="username" class="form-label text-white">
+                                <i class="fas fa-user me-2 text-warning"></i>Nom d'utilisateur
+                            </label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="username" 
+                                   name="username" 
+                                   required 
+                                   autocomplete="off"
+                                   autofocus>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label text-white">
+                                <i class="fas fa-lock me-2 text-warning"></i>Mot de passe
+                            </label>
+                            <input type="password" 
+                                   class="form-control form-control-lg" 
+                                   id="password" 
+                                   name="password" 
+                                   required>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-warning btn-lg px-5 w-100">
+                                <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
