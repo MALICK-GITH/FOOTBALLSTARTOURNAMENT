@@ -805,20 +805,7 @@ def uploaded_file(filename):
 
 # ==================== INITIALISATION ====================
 
-@app.before_first_request
-def create_tables():
-    """Créer les tables si elles n'existent pas"""
-    db.create_all()
-    
-    # Créer l'admin par défaut si aucun n'existe
-    if not AdminUser.query.first():
-        admin = AdminUser(username='admin')
-        admin.set_password('admin123')
-        db.session.add(admin)
-        db.session.commit()
-        print("Admin créé: username='admin', password='admin123'")
-
-# Pour Flask 2.2+, utiliser @app.before_request au lieu de @app.before_first_request
+# Initialiser la base de données et créer l'admin par défaut
 with app.app_context():
     db.create_all()
     if not AdminUser.query.first():
@@ -826,6 +813,7 @@ with app.app_context():
         admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
+        print("Admin créé: username='admin', password='admin123'")
 
 if __name__ == '__main__':
     app.run(debug=True)
