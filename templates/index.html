@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eFootball Mobile 2026 - Plateforme de Tournois</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/" class="logo">⚽ eFootball 2026</a>
+            <ul class="nav-links">
+                <li><a href="/">Accueil</a></li>
+                <li><a href="#tournaments">Tournois</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="card">
+                <h1>Bienvenue sur la Plateforme de Tournois eFootball Mobile 2026</h1>
+                <p>Affrontez les meilleurs joueurs, participez à des tournois compétitifs et remportez des prix!</p>
+            </div>
+        </section>
+
+        <!-- Messages Admin -->
+        <section id="messagesContainer" class="messages-container"></section>
+
+        <!-- Tournois -->
+        <section id="tournaments">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Tournois Disponibles</h2>
+                </div>
+                <div id="tournamentsContainer" class="tournament-grid">
+                    <div class="loading"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Connexion -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Connexion</h2>
+                <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            </div>
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="loginPassword" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="rememberMe"> Rester connecté
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Se connecter</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Inscription -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Inscription</h2>
+                <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            </div>
+            <form onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="registerEmail" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Nom d'utilisateur</label>
+                    <input type="text" id="registerUsername" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Nom complet</label>
+                    <input type="text" id="registerFullName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Téléphone (optionnel)</label>
+                    <input type="tel" id="registerPhone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe (min 8 caractères)</label>
+                    <input type="password" id="registerPassword" class="form-control" required minlength="8">
+                </div>
+                <button type="submit" class="btn btn-primary">S'inscrire</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Profil -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Mon Profil</h2>
+                <span class="close" onclick="closeModal('profileModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>Photo de profil actuelle</label>
+                <img id="currentProfilePicture" class="profile-picture" src="/static/default-avatar.png" alt="Profil">
+            </div>
+            <div class="form-group">
+                <label>Changer la photo de profil</label>
+                <input type="file" id="profilePictureInput" accept="image/*" onchange="uploadProfilePicture(this.files[0])">
+            </div>
+            <form onsubmit="updateProfile(event)">
+                <div class="form-group">
+                    <label>Nom d'utilisateur</label>
+                    <input type="text" id="profileUsername" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Nom complet</label>
+                    <input type="text" id="profileFullName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Téléphone</label>
+                    <input type="tel" id="profilePhone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Statut</label>
+                    <div id="profileStatus"></div>
+                </div>
+                <div class="form-group">
+                    <label>Preuve de paiement</label>
+                    <input type="file" id="paymentProofInput" accept="image/*,.pdf" onchange="uploadPaymentProof(this.files[0])">
+                    <small>JPG, PNG ou PDF (max 5MB)</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Mettre à jour</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
+

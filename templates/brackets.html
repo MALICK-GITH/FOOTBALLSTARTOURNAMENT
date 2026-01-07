@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brackets - eFootball 2026</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/" class="logo">⚽ eFootball 2026</a>
+            <ul class="nav-links">
+                <li><a href="/">Accueil</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title" id="tournamentTitle">Brackets du Tournoi</h1>
+            </div>
+            <div id="bracketsContainer" class="bracket-container">
+                <div class="loading"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Matchs</h2>
+            <div id="matchesContainer"></div>
+        </div>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Obtenir l'ID du tournoi depuis l'URL
+        const tournamentId = window.location.pathname.split('/')[2];
+        
+        // Charger les brackets et matchs
+        async function loadBrackets() {
+            try {
+                const [tournamentRes, bracketsRes, matchesRes] = await Promise.all([
+                    fetch(`/api/tournaments/${tournamentId}`),
+                    fetch(`/api/tournaments/${tournamentId}/brackets`),
+                    fetch(`/api/tournaments/${tournamentId}/matches`)
+                ]);
+                
+                const tournament = await tournamentRes.json();
+                const brackets = await bracketsRes.json();
+                const matches = await matchesRes.json();
+                
+                document.getElementById('tournamentTitle').textContent = `Brackets - ${tournament.name}`;
+                
+                // Organiser les brackets par round
+                const bracketsByRound = {};
+                brackets.forEach(bracket => {
+                    if (!bracketsByRound[bracket.round_number]) {
+                        bracketsByRound[bracket.round_number] = [];
+                    }
+                    bracketsByRound[bracket.round_number].push(bracket);
+                });
+                
+                // Afficher les brackets
+                const container = document.getElementById('bracketsContainer');
+                container.innerHTML = '';
+                
+                Object.keys(bracketsByRound).sort((a, b) => a - b).forEach(roundNum => {
+                    const roundDiv = document.createElement('div');
+                    roundDiv.className = 'round';
+                    roundDiv.innerHTML = `<h3>Round ${roundNum}</h3>`;
+                    
+                    bracketsByRound[roundNum].forEach(bracket => {
+                        const matchDiv = document.createElement('div');
+                        matchDiv.className = 'match';
+                        if (bracket.user) {
+                            matchDiv.innerHTML = `
+                                <div class="player">${bracket.user.username}</div>
+                            `;
+                        }
+                        roundDiv.appendChild(matchDiv);
+                    });
+                    
+                    container.appendChild(roundDiv);
+                });
+                
+                // Afficher les matchs
+                const matchesContainer = document.getElementById('matchesContainer');
+                matchesContainer.innerHTML = matches.map(match => `
+                    <div class="match">
+                        <h4>Match ${match.match_number} - Round ${match.round_number}</h4>
+                        <div class="match-score">
+                            <span>${match.player1 ? match.player1.username : 'TBD'}</span>
+                            <span>vs</span>
+                            <span>${match.player2 ? match.player2.username : 'TBD'}</span>
+                        </div>
+                        ${match.player1_score !== null && match.player2_score !== null ? `
+                            <div>Score: ${match.player1_score} - ${match.player2_score}</div>
+                        ` : '<div>Match à venir</div>'}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Erreur de chargement:', error);
+            }
+        }
+        
+        loadBrackets();
+    </script>
+</body>
+</html>
+
